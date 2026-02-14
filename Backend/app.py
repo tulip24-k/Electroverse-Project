@@ -27,12 +27,11 @@ def cleanup_orphaned_chunks():
 def home():
     return "Encrypted Video Server is Running"
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    if 'video' not in request.files:
+def upload(video, plates):
+    if video not in request.files:
         return jsonify({"error": "No file provided"}), 400
     
-    file = request.files['video']
+    file = request.files[video]
     
     # Capture metadata from the encryption person's script
     # They are likely sending camera_id or other headers
@@ -45,7 +44,7 @@ def upload():
         content_type='application/octet-stream',
         metadata={
             "camera_id": camera_id,
-            "plate_numbers": [], # Initialize empty list for future OCR updates
+            "plate_numbers": plates,
             "is_encrypted": True,
             "container_format": "WattLagGyi"
         }
@@ -73,7 +72,6 @@ def stream_video(video_id):
     except Exception:
         return "Video not found", 404
 
-@app.route('/update_plate/<video_id>', methods=['PATCH'])
 def update_plate(video_id):
     data = request.get_json()
     plate_numbers = data.get('plate_numbers')
@@ -160,3 +158,4 @@ if __name__ == '__main__':
     # Clean up any data left over from files that expired via TTL
     cleanup_orphaned_chunks()
     app.run(host='0.0.0.0', port=5000, debug=True)
+

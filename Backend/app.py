@@ -94,8 +94,12 @@ def update_plate(video_id):
 @app.route('/search')
 def search_videos():
     plate = request.args.get('plate')
-    date_str = request.args.get('date') 
+    date_str = request.args.get('date') # YYYY-MM-DD
     camera_id = request.args.get('camera_id')
+    
+    # New Time Parameters (Format: HH:MM:SS)
+    start_time_str = request.args.get('start_time') 
+    end_time_str = request.args.get('end_time')
 
     query = {}
 
@@ -105,14 +109,32 @@ def search_videos():
     if camera_id:
         query["metadata.camera_id"] = camera_id
 
+    # Time-based filtering logic
     if date_str:
         try:
-            ist_start = datetime.strptime(date_str, '%Y-%m-%d')
+            # 1. Establish the base date in IST
+            base_date = datetime.strptime(date_str, '%Y-%m-%d')
+            
+            # 2. Refine start/end window if specific times are provided
+            if start_time_str and end_time_str:
+                t_start = datetime.strptime(start_time_str, '%H:%M:%S').time()
+                t_end = datetime.strptime(end_time_str, '%H:%M:%S').time()
+                
+                ist_start = datetime.combine(base_date, t_start)
+                ist_end = datetime.combine(base_date, t_end)
+            else:
+                # Default to the whole day if no time is specified
+                ist_start = base_date
+                ist_end = ist_start + timedelta(days=1)
+
+            # 3. Convert IST to UTC for MongoDB Query (IST is UTC +5:30)
             utc_start = ist_start - timedelta(hours=5, minutes=30)
-            utc_end = utc_start + timedelta(days=1)
+            utc_end = ist_end - timedelta(hours=5, minutes=30)
+            
             query["uploadDate"] = {"$gte": utc_start, "$lt": utc_end}
+
         except ValueError:
-            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+            return jsonify({"error": "Invalid format. Use Date: YYYY-MM-DD, Time: HH:MM:SS"}), 400
 
     cursor = db.fs.files.find(query)
     results = []

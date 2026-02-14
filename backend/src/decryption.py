@@ -13,6 +13,3 @@ video_data = cipher.decrypt_and_verify(ciphertext, tag)
 
 with open("decrypted_output.mp4", "wb") as f:
     f.write(video_data)
-
-print("Decryption successful")
-print("Decryption successful")

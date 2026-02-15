@@ -31,9 +31,7 @@ function InnerApp() {
 
 function App() {
   return (
-    <AuthProvider>
-      <InnerApp />
-    </AuthProvider>
+    <Player/>
   )
 }
 
